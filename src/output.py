@@ -24,6 +24,6 @@ class SpikingRadarResult_1D:
         calculated_distance = self.distance_m
         print(f"--- RESULTS ---")
         print(f"Actual Wall Distance:    {wall_distance} m")
-        print(f"Calculated Distance:     {calculated_distance:.4f} m")
-        print(f"Error:                   {abs(wall_distance - calculated_distance):.4f} m")
+        print(f"Calculated Distance:     {calculated_distance} m")
+        print(f"Error:                   {abs(wall_distance - calculated_distance)} m")
         return None
