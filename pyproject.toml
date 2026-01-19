@@ -1,0 +1,19 @@
+[project]
+name = "radar-snn-2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jax",
+    "jax-metal",
+    "matplotlib>=3.10.8",
+    "notebook>=7.5.2",
+    "numpy<2",
+    "pandas>=2.3.3",
+    "pytest>=9.0.2",
+    "scipy>=1.17.0",
+    "snnax>=0.0.1",
+    "snntorch>=0.9.4",
+    "torch>=2.9.1",
+]
