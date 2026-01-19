@@ -1,25 +1,37 @@
+from __future__ import annotations
+
+
 import numpy as np
-from scipy import signal
-from .config import PhysicsConfig, RadarConfig
-from .interfaces import SignalData
 
+from config import PhysicsConfig, SpikingRadarConfig, ObjectsConfig
 
-class Environment:
-    """Stage 3: The Physics (Delay, Attenuation, Noise)."""
-    def __init__(self, p_cfg: PhysicsConfig):
-        self.p_cfg = p_cfg
+class SpikingRadarChannel_1D:
+    """Applies propagation delay, attenuation, and noise."""
 
-    def propagate(self, tx_signal: SignalData, target_distance: float) -> SignalData:
-        # 1. Time of Flight Calc
-        tof = (2 * target_distance) / self.p_cfg.c
-        delay_samples = int(tof * self.p_cfg.fs)
-        
-        # 2. Apply Delay
-        rx_data = np.roll(tx_signal.data, delay_samples)
-        
-        # 3. Apply Loss & Noise
-        rx_data = rx_data * 0.5  # Attenuation
-        noise = np.random.normal(0, 0.1, len(rx_data))
-        rx_data += noise
-        
-        return SignalData(rx_data, tx_signal.time, tx_signal.fs, {"dist": target_distance})
+    def __init__(self, config: SpikingRadarConfig, physics: PhysicsConfig, objects: ObjectsConfig) -> None:
+        self.config = config
+        self.physics = physics
+        self.objects = objects
+
+    def propagate(self, tx_signal: np.ndarray) -> np.ndarray:
+        tof_s = 2.0 * self.objects.object_location_1D / self.physics.c
+        delay_samples = int(round(tof_s * self.config.fs_hz))
+        delayed = self._apply_delay(tx_signal, delay_samples)
+
+        rx_signal = delayed * self.config.attenuation
+        if self.config.noise_std > 0:
+            rng = np.random.default_rng(
+                None if self.config.random_seed is None else self.config.random_seed + 1
+            )
+            noise = rng.normal(0.0, self.config.noise_std, size=rx_signal.size)
+            rx_signal = rx_signal + noise
+        return rx_signal
+
+    @staticmethod
+    def _apply_delay(signal_in: np.ndarray, delay_samples: int) -> np.ndarray:
+        if delay_samples <= 0:
+            return signal_in.copy()
+        if delay_samples >= signal_in.size:
+            return np.zeros_like(signal_in)
+        padding = np.zeros(delay_samples, dtype=signal_in.dtype)
+        return np.concatenate([padding, signal_in[:-delay_samples]])
