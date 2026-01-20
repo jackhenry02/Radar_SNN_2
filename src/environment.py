@@ -38,7 +38,11 @@ class SpikingRadarChannel_1D:
 
 
 class SpikingRadarChannel_2D:
-    """Applies 2D propagation delays to a binaural receiver."""
+    """Applies 2D propagation delays to a binaural receiver.
+
+    Coordinate convention: object_location_2D = (range_x, lateral_y), where
+    +x is forward range and +y is to the left receiver.
+    """
 
     def __init__(
         self,
@@ -59,8 +63,8 @@ class SpikingRadarChannel_2D:
         obj_pos = np.array([obj_x, obj_y], dtype=float)
 
         tx_pos = np.array([0.0, 0.0], dtype=float)
-        left_pos = np.array([-0.5 * self.receiver_spacing_m, 0.0], dtype=float)
-        right_pos = np.array([0.5 * self.receiver_spacing_m, 0.0], dtype=float)
+        left_pos = np.array([0.0, 0.5 * self.receiver_spacing_m], dtype=float)
+        right_pos = np.array([0.0, -0.5 * self.receiver_spacing_m], dtype=float)
 
         dist_tx_obj = np.linalg.norm(obj_pos - tx_pos)
         dist_obj_left = np.linalg.norm(obj_pos - left_pos)
