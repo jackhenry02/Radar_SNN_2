@@ -18,6 +18,25 @@ class LIFDelayResult:
     delays_s: np.ndarray
 
 
+@dataclass
+class LIFDelay2DResult:
+    delay_samples_left: int
+    delay_samples_right: int
+    delay_s_left: float
+    delay_s_right: float
+    delay_s: float
+    distance_m: float
+    itd_samples: int
+    itd_s: float
+    angle_rad: float
+    angle_deg: float
+    spike_counts_left: np.ndarray
+    spike_counts_right: np.ndarray
+    spike_counts_itd: np.ndarray
+    delays_s: np.ndarray
+    itd_delays_s: np.ndarray
+
+
 class SpikingLIFDelayEstimator:
     """
     Delay estimator using a bank of LIF coincidence-detecting neurons.
@@ -85,6 +104,39 @@ class SpikingLIFDelayEstimator:
 
         return spike_counts
 
+    def _run_lif_bank_signed(
+        self,
+        left_spikes: np.ndarray,
+        right_spikes: np.ndarray,
+        delay_bins: np.ndarray,
+    ) -> np.ndarray:
+        """
+        Run LIF neurons over signed delay hypotheses (right - left).
+        Returns spike count per delay bin.
+        """
+        n_delays = len(delay_bins)
+        T = len(left_spikes)
+
+        V = np.zeros(n_delays)
+        spike_counts = np.zeros(n_delays, dtype=int)
+
+        for t in range(T):
+            left = left_spikes[t]
+
+            right_idx = t + delay_bins
+            valid = (right_idx >= 0) & (right_idx < T)
+            right = np.zeros(n_delays)
+            right[valid] = right_spikes[right_idx[valid]]
+
+            right_gated = right * left
+            V = self.alpha * V + self.w_tx * left + self.w_rx * right_gated
+
+            fired = (V >= self.v_th) & (right_gated > 0.0)
+            spike_counts[fired] += 1
+            V[fired] = 0.0  # reset
+
+        return spike_counts
+
     def estimate(
         self,
         tx_spikes: np.ndarray,
@@ -137,3 +189,97 @@ class SpikingLIFDelayEstimator:
             plt.show()
 
         return fig, ax
+
+    def estimate_2d(
+        self,
+        tx_spikes: np.ndarray,
+        rx_left_spikes: np.ndarray,
+        rx_right_spikes: np.ndarray,
+        receiver_spacing_m: float,
+    ) -> LIFDelay2DResult:
+        spike_counts_left = self._run_lif_bank(tx_spikes, rx_left_spikes)
+        spike_counts_right = self._run_lif_bank(tx_spikes, rx_right_spikes)
+
+        best_left = int(np.argmax(spike_counts_left))
+        best_right = int(np.argmax(spike_counts_right))
+
+        delay_samples_left = int(self.delay_bins[best_left])
+        delay_samples_right = int(self.delay_bins[best_right])
+
+        delay_s_left = delay_samples_left / self.config.fs_hz
+        delay_s_right = delay_samples_right / self.config.fs_hz
+
+        delay_s = 0.5 * (delay_s_left + delay_s_right)
+        distance_m = self.physics.c * delay_s / 2.0
+
+        if receiver_spacing_m > 0:
+            max_itd_s = receiver_spacing_m / self.physics.c
+            max_itd_samples = int(round(max_itd_s * self.config.fs_hz))
+        else:
+            max_itd_samples = 0
+
+        itd_bins = np.arange(-max_itd_samples, max_itd_samples + 1)
+        spike_counts_itd = self._run_lif_bank_signed(
+            rx_left_spikes,
+            rx_right_spikes,
+            itd_bins,
+        )
+
+        best_itd = int(np.argmax(spike_counts_itd))
+        itd_samples = int(itd_bins[best_itd])
+        itd_s = itd_samples / self.config.fs_hz
+
+        if receiver_spacing_m > 0:
+            sine_arg = itd_s * self.physics.c / receiver_spacing_m
+            sine_arg = float(np.clip(sine_arg, -1.0, 1.0))
+            angle_rad = float(np.arcsin(sine_arg))
+        else:
+            angle_rad = 0.0
+        angle_deg = float(np.degrees(angle_rad))
+
+        return LIFDelay2DResult(
+            delay_samples_left=delay_samples_left,
+            delay_samples_right=delay_samples_right,
+            delay_s_left=delay_s_left,
+            delay_s_right=delay_s_right,
+            delay_s=delay_s,
+            distance_m=distance_m,
+            itd_samples=itd_samples,
+            itd_s=itd_s,
+            angle_rad=angle_rad,
+            angle_deg=angle_deg,
+            spike_counts_left=spike_counts_left,
+            spike_counts_right=spike_counts_right,
+            spike_counts_itd=spike_counts_itd,
+            delays_s=self.delay_bins / self.config.fs_hz,
+            itd_delays_s=itd_bins / self.config.fs_hz,
+        )
+
+    def plot_2d(
+        self,
+        result: LIFDelay2DResult,
+        show: bool = True,
+    ) -> Tuple[plt.Figure, np.ndarray]:
+        fig, axes = plt.subplots(2, 1, figsize=(10, 6))
+
+        axes[0].plot(result.delays_s, result.spike_counts_left, label="Left", color="black")
+        axes[0].plot(result.delays_s, result.spike_counts_right, label="Right", color="gray")
+        axes[0].axvline(result.delay_s, color="red", linestyle="--", label="Range Estimate")
+        axes[0].set_title("LIF Range Bank (Left/Right)")
+        axes[0].set_xlabel("Delay (s)")
+        axes[0].set_ylabel("Spike count")
+        axes[0].legend()
+        axes[0].grid(True)
+
+        axes[1].plot(result.itd_delays_s, result.spike_counts_itd, color="purple")
+        axes[1].axvline(result.itd_s, color="red", linestyle="--", label="ITD Estimate")
+        axes[1].set_title("LIF ITD Bank (Angle)")
+        axes[1].set_xlabel("Interaural delay (s)")
+        axes[1].set_ylabel("Spike count")
+        axes[1].legend()
+        axes[1].grid(True)
+
+        fig.tight_layout()
+        if show:
+            plt.show()
+        return fig, axes
