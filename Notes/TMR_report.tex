@@ -1,0 +1,133 @@
+\documentclass[12pt]{article}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\title{Technical Milestone Report: Spiking Radar/Sonar Pipeline for Range and Angle Estimation}
+\author{Jack Henry}
+\date{}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Summary.} This project investigates whether a full radar/sonar processing chain can be implemented with spiking neural primitives to enable low-power, event-driven sensing. I have built a working 1D and 2D pipeline that generates spike-encoded chirps, propagates echoes through a simulated environment, recovers spikes via matched filtering, and estimates range and angle using a Jeffress-style LIF coincidence bank. The next phase will improve angular resolution, introduce biologically inspired front-end filtering, and explore learning-based tuning while managing risks around parameter sensitivity and noise robustness.
+
+\section{Introduction and Motivation}
+Radar and sonar systems rely on precise time-of-flight estimation, typically computed with matched filtering and cross-correlation. Spiking neural networks (SNNs) offer a compelling alternative: they are event-driven, energy efficient, and naturally suited to timing-based computation. Neuroscience provides an existence proof in bat echolocation, where precise delay coding enables range and angle perception. This project aims to bridge classical signal processing and spiking computation by building an end-to-end spiking radar/sonar pipeline and validating whether Jeffress-style coincidence detection can replace conventional correlation while retaining accuracy.
+
+The core hypothesis is that a bank of leaky integrate-and-fire (LIF) neurons can approximate cross-correlation by detecting spike coincidences across multiple delay hypotheses, enabling range and angle estimation with low computational overhead.
+
+\section{Background}
+\subsection{Classical radar/sonar processing}
+For a transmitted baseband signal $x(t)$ and received echo $y(t)$, the classical delay estimate is obtained by cross-correlation:
+$$
+R_{xy}(\tau) = \int x(t)\,y(t+\tau)\,dt, \qquad \hat{\tau} = \arg\max_{\tau} R_{xy}(\tau).
+$$
+Distance is then $\hat{R} = c \hat{\tau} / 2$, where $c$ is the wave speed. In binaural sensing, angle is estimated via interaural time difference (ITD).
+
+\subsection{Spiking computation and LIF neurons}
+The LIF neuron is a simple, widely used model that acts as a leaky integrator and coincidence detector. Its continuous-time dynamics are
+$$
+\tau_m \frac{dV(t)}{dt} = -V(t) + w_x x(t) + w_r r(t),
+$$
+with threshold $V_{th}$ and reset after spiking. In discrete time,
+$$
+V[n+1] = \alpha V[n] + w_x x[n] + w_r r[n], \quad \alpha = e^{-\Delta t/\tau_m}.
+$$
+This provides a direct mechanism for detecting temporally aligned events.
+
+\subsection{Jeffress coincidence model}
+Jeffress-style models implement delay tuning using neural delay lines feeding coincidence detectors. A neuron fires maximally when its internal delay matches the true signal delay. This is a biologically plausible analog of cross-correlation and is used to compute both range (delay between transmit and receive) and angle (ITD between left and right channels).
+
+\section{System Overview}
+The implemented pipeline consists of:
+\begin{enumerate}
+  \item Spike generation (Poisson or deterministic).
+  \item Spike-to-waveform encoding via chirp convolution.
+  \item Carrier modulation and propagation through a delay-and-noise channel.
+  \item Demodulation, low-pass filtering, and matched filtering.
+  \item Spike recovery via thresholding.
+  \item Jeffress-style LIF coincidence banks for range and angle.
+\end{enumerate}
+
+\subsection{Spike generation}
+Spike trains are produced with a Bernoulli process per sample:
+$$
+x[n] \sim \text{Bernoulli}(p), \quad p = \lambda \Delta t.
+$$
+Poisson spiking is used because it is memoryless, maximum-entropy given a mean rate, and analytically tractable. Deterministic spikes are also used for debugging and ground-truth verification.
+
+\subsection{Signal construction and matched filtering}
+Spikes are convolved with a chirp template $c[n]$:
+$$
+b[n] = (x * c)[n].
+$$
+After modulation and propagation, the receiver demodulates and applies a matched filter:
+$$
+h[n] = c[-n], \qquad y[n] = (s_{bb} * h)[n].
+$$
+Matched filtering maximizes SNR for known signals in white noise.
+
+\section{Progress to Date}
+\subsection{1D pipeline}
+I implemented an end-to-end 1D system that generates spikes, transmits a chirp, simulates echo delay and noise, recovers spikes, and estimates distance. A LIF coincidence bank replaces classical cross-correlation and yields the same delay estimate under controlled conditions.
+
+\subsection{2D extension with binaural sensing}
+The pipeline has been extended to 2D with left and right receiver channels. The propagation model uses explicit geometry to compute left/right path lengths and delays. Angle is estimated via ITD using a signed LIF delay bank.
+
+\subsection{Jeffress-style LIF delay estimator}
+For range, each neuron corresponds to a delay hypothesis $d_i$:
+$$
+V_i[n+1] = \alpha V_i[n] + w_x x[n-d_i] + w_r r[n].
+$$
+The spike count across neurons approximates a discrete cross-correlation:
+$$
+N_i \propto \sum_n x[n-d_i]\,r[n], \quad \hat{d} = \arg\max_i N_i.
+$$
+For angle, a signed delay bank aligns $r_L$ and $r_R$:
+$$
+N_i \propto \sum_n r_L[n]\,r_R[n+\delta_i], \quad \widehat{\text{ITD}} = \hat{\delta}\Delta t.
+$$
+The angle is then:
+$$
+\theta = \arcsin\left(\frac{c\,\widehat{\text{ITD}}}{d}\right).
+$$
+
+\section{Current Results}
+The system successfully recovers distance in 1D and 2D scenarios with millimeter-scale resolution at $f_s = 100~\text{kHz}$. Angle estimation is functional in a $\pm 40^\circ$ sweep, with accuracy governed by ITD bin size and receiver spacing.
+
+\section{Risks and Mitigations}
+\begin{table}[h]
+\centering
+\begin{tabular}{p{6cm} p{3cm} p{6cm}}
+\toprule
+\textbf{Risk} & \textbf{Likelihood} & \textbf{Mitigation} \\
+\midrule
+Parameter sensitivity in LIF banks (threshold, $\tau_m$) & Medium & Use analytical bounds, sweep parameters, add automated calibration. \\
+Angular resolution limited by sampling rate & Medium & Increase $f_s$, add sub-sample peak interpolation, or use analog ITD estimation. \\
+Noise sensitivity of spike recovery & Medium & Improve matched filter, adaptive thresholding, and spike thinning. \\
+Compute complexity for large delay banks & Low & Vectorize banks and explore multirate or hierarchical delay search. \\
+Scope creep in biologically detailed modeling & Medium & Maintain staged milestones; prioritize robust baseline. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Plan for Future Work}
+\begin{enumerate}
+  \item Improve ITD resolution with sub-sample peak fitting and refined spike recovery.
+  \item Introduce bio-inspired front-end filtering (cochlear or filterbank) matched to the chirp sweep.
+  \item Implement inhibitory or winner-take-all layers to sharpen delay selectivity.
+  \item Explore learning-based tuning (STDP or gradient-based) for adaptive thresholds and weights.
+  \item Evaluate robustness under varying noise and clutter, and compare to classical correlation baselines.
+\end{enumerate}
+
+\section{Conclusion}
+The project has achieved a complete spiking radar/sonar pipeline in both 1D and 2D, demonstrating that Jeffress-style LIF coincidence detection can replace classical correlation for delay and angle estimation. The next phase will focus on improving angular resolution, biological plausibility, and robustness in realistic conditions while managing parameter and noise sensitivities.
+
+\end{document}
