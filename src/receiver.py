@@ -52,8 +52,9 @@ class SpikingRadarReceiver_1D:
         if max_val > 0:
             norm = recovered_signal / max_val
         else:
-            norm = recovered_signal
+            norm = np.abs(recovered_signal)
         return (norm > self.config.threshold).astype(float)
+
 
     def plot(
         self,
