@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Literal, Tuple
 import numpy as np
 
 
@@ -48,6 +48,7 @@ class PhysicsConfig:
 @dataclass
 class ObjectsConfig:
     object_location_1D: float = 5.0
+    object_location_2D: Tuple[float, float] = (5.0, 0.0)
 
 @dataclass
 class SpikingRadarConfig:
@@ -66,6 +67,7 @@ class SpikingRadarConfig:
     random_seed: int | None = 42
     lowpass_cutoff_hz: float | None = None
     filter_order: int = 10
+    receiver_spacing_m: float = 0.2
 
     @property
     def sample_count(self) -> int:
