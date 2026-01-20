@@ -48,11 +48,13 @@ class SpikingRadarReceiver_1D:
         return signal.convolve(rx_baseband, matched, mode="same")
 
     def recover_spikes(self, recovered_signal: np.ndarray) -> np.ndarray:
-        max_val = np.max(np.abs(recovered_signal))
+        abs_signal = np.abs(recovered_signal)
+
+        max_val = np.max(abs_signal)
         if max_val > 0:
-            norm = recovered_signal / max_val
+            norm = abs_signal / max_val
         else:
-            norm = np.abs(recovered_signal)
+            norm = abs_signal
         return (norm > self.config.threshold).astype(float)
 
 
