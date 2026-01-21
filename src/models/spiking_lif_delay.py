@@ -104,6 +104,42 @@ class SpikingLIFDelayEstimator:
 
         return spike_counts
 
+    def run_lif_bank_raster(
+        self,
+        tx_spikes: np.ndarray,
+        rx_spikes: np.ndarray,
+    ) -> tuple[np.ndarray, list[list[int]]]:
+        """
+        Run LIF neurons over all delay hypotheses and record spike times.
+        Returns spike counts and a per-neuron list of spike indices.
+        """
+        n_delays = len(self.delay_bins)
+        T = len(tx_spikes)
+
+        V = np.zeros(n_delays)
+        spike_counts = np.zeros(n_delays, dtype=int)
+        spike_times: list[list[int]] = [[] for _ in range(n_delays)]
+
+        for t in range(T):
+            rx = rx_spikes[t]
+
+            tx_idx = t - self.delay_bins
+            valid = tx_idx >= 0
+            tx = np.zeros(n_delays)
+            tx[valid] = tx_spikes[tx_idx[valid]]
+
+            rx_gated = rx * tx
+            V = self.alpha * V + self.w_tx * tx + self.w_rx * rx_gated
+
+            fired = (V >= self.v_th) & (rx_gated > 0.0)
+            fired_idx = np.flatnonzero(fired)
+            for idx in fired_idx:
+                spike_counts[idx] += 1
+                spike_times[idx].append(t)
+            V[fired] = 0.0
+
+        return spike_counts, spike_times
+
     def _run_lif_bank_signed(
         self,
         left_spikes: np.ndarray,
@@ -164,7 +200,7 @@ class SpikingLIFDelayEstimator:
         result: LIFDelayResult,
         show: bool = True,
     ) -> Tuple[plt.Figure, plt.Axes]:
-        fig, ax = plt.subplots(figsize=(10, 4))
+        fig, ax = plt.subplots(figsize=(7, 4))
 
         ax.plot(
             result.delays_s,
@@ -260,7 +296,7 @@ class SpikingLIFDelayEstimator:
         result: LIFDelay2DResult,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(2, 1, figsize=(10, 6))
+        fig, axes = plt.subplots(2, 1, figsize=(7, 4))
 
         axes[0].plot(result.delays_s, result.spike_counts_left, label="Left", color="black")
         axes[0].plot(result.delays_s, result.spike_counts_right, label="Right", color="gray")
