@@ -21,7 +21,7 @@
 \section{Introduction and Motivation}
 Radar and sonar systems rely on precise time-of-flight estimation, typically computed with matched filtering and cross-correlation. Spiking neural networks (SNNs) offer a compelling alternative: they are event-driven, energy efficient, and naturally suited to timing-based computation. Neuroscience provides an existence proof in bat echolocation, where precise delay coding enables range and angle perception. This project aims to bridge classical signal processing and spiking computation by building an end-to-end spiking radar/sonar pipeline and validating whether Jeffress-style coincidence detection can replace conventional correlation while retaining accuracy.
 
-The core hypothesis is that a bank of leaky integrate-and-fire (LIF) neurons can approximate cross-correlation by detecting spike coincidences across multiple delay hypotheses, enabling range and angle estimation with low computational overhead.
+The core hypothesis is that a bank of leaky integrate-and-fire (LIF) neurons can approximate cross-correlation by detecting spike coincidences across multiple delay hypotheses, enabling range and angle estimation with low computational overhead \cite{mso2010,review2024}.
 
 \section{Background}
 \subsection{Classical radar/sonar processing}
@@ -43,7 +43,10 @@ $$
 This provides a direct mechanism for detecting temporally aligned events.
 
 \subsection{Jeffress coincidence model}
-Jeffress-style models implement delay tuning using neural delay lines feeding coincidence detectors. A neuron fires maximally when its internal delay matches the true signal delay. This is a biologically plausible analog of cross-correlation and is used to compute both range (delay between transmit and receive) and angle (ITD between left and right channels).
+Jeffress-style models implement delay tuning using neural delay lines feeding coincidence detectors. A neuron fires maximally when its internal delay matches the true signal delay. This is a biologically plausible analog of cross-correlation and is used to compute both range (delay between transmit and receive) and angle (ITD between left and right channels) \cite{mso2010}.
+
+\subsection{Prior computational models}
+Bat-inspired SNNs have been used for 2D navigation and azimuth detection \cite{tandon2016} and for ITD localization using MSO-style delay lines and STDP \cite{mso2010}. Range estimation has been modeled using inferior-colliculus-inspired coincidence detection and lateral inhibition \cite{hoshino2002}. Non-spiking baselines such as Bat-G Net demonstrate high-performance 3D reconstruction with CNN architectures \cite{batgnet2018}. Broader reviews highlight a split between biologically faithful SNN models and engineering-driven ANN/SNN models for radar and sonar \cite{review2024,automotive2022,compbiosonar2021}. Neurophysiology shows that bats rely on precise timing and synchrony in auditory cortex for target characterization \cite{temporal2020,neurobio2003} and that vocal-motor control is tightly coupled to auditory processing \cite{vocal2007}.
 
 \section{System Overview}
 The implemented pipeline consists of:
@@ -125,9 +128,45 @@ Scope creep in biologically detailed modeling & Medium & Maintain staged milesto
   \item Implement inhibitory or winner-take-all layers to sharpen delay selectivity.
   \item Explore learning-based tuning (STDP or gradient-based) for adaptive thresholds and weights.
   \item Evaluate robustness under varying noise and clutter, and compare to classical correlation baselines.
+  \item Extend the model toward Doppler-shift compensation mechanisms observed in CF-FM bats \cite{dsc2022}.
 \end{enumerate}
 
 \section{Conclusion}
 The project has achieved a complete spiking radar/sonar pipeline in both 1D and 2D, demonstrating that Jeffress-style LIF coincidence detection can replace classical correlation for delay and angle estimation. The next phase will focus on improving angular resolution, biological plausibility, and robustness in realistic conditions while managing parameter and noise sensitivities.
+
+\begin{thebibliography}{99}
+\bibitem{tandon2016}
+Tandon, Malviya, and Rajendran. ``Efficient and Robust Spiking Neural Circuit for Navigation Inspired by Echolocating Bats.'' NeurIPS 2016. \url{https://proceedings.neurips.cc/paper/2016/hash/a86c450b76fb8c371afead6410d55534-Abstract.html}
+
+\bibitem{hoshino2002}
+Hoshino and Kuroiwa. ``A neural network model of the inferior colliculus with modifiable lateral inhibitory synapses for human echolocation.'' 2002. \url{https://pubmed.ncbi.nlm.nih.gov/12068788/}
+
+\bibitem{mso2010}
+Kuznetsov et al. ``A Spiking Neural Network Model of the Medial Superior Olive Using Spike Timing Dependent Plasticity for Sound Localization.'' Frontiers in Computational Neuroscience, 2010. \url{https://www.frontiersin.org/journals/computational-neuroscience/articles/10.3389/fncom.2010.00018/full}
+
+\bibitem{batgnet2018}
+Bat-G Net. ``Bat-inspired High-Resolution 3D Image Reconstruction using Ultrasonic Echoes.'' NeurIPS 2018. \url{https://papers.nips.cc/paper/8629-bat-g-net-bat-inspired-high-resolution-3d-image-reconstruction-using-ultrasonic-echoes}
+
+\bibitem{review2024}
+``A Review of Neuromorphic Sound Source Localization and Echolocation-Based Navigation Systems.'' MDPI, 2024. \url{https://www.mdpi.com/2079-9292/13/24/4858}
+
+\bibitem{automotive2022}
+``Automotive Radar Processing With Spiking Neural Networks: Concepts and Challenges.'' Frontiers, 2022. \url{https://www.frontiersin.org/journals/neuroscience/articles/10.3389/fnins.2022.851774/full}
+
+\bibitem{compbiosonar2021}
+``A comprehensive computational model of animal biosonar signal processing.'' PLOS Computational Biology, 2021. \url{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008677}
+
+\bibitem{temporal2020}
+``Temporal coding of echo spectral shape in the bat auditory cortex.'' PLOS Biology, 2020. \url{https://journals.plos.org/plosbiology/article?id=10.1371/journal.pbio.3000831}
+
+\bibitem{neurobio2003}
+``Neurobiology of echolocation in bats.'' 2003. \url{https://pubmed.ncbi.nlm.nih.gov/14662378/}
+
+\bibitem{vocal2007}
+``What the bat's voice tells the bat's brain.'' PNAS, 2007. \url{https://www.pnas.org/doi/10.1073/pnas.0703550105}
+
+\bibitem{dsc2022}
+``Doppler shift compensation performance in \textit{Hipposideros pratti} across experimental paradigms.'' Frontiers, 2022. \url{https://www.frontiersin.org/journals/systems-neuroscience/articles/10.3389/fnsys.2022.920703/full}
+\end{thebibliography}
 
 \end{document}
