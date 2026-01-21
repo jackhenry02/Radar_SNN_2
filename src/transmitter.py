@@ -61,7 +61,7 @@ class SpikingRadarTransmitter:
         )
 
     def plot(self, tx: SpikingRadarTx, show: bool = True) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+        fig, axes = plt.subplots(3, 1, figsize=(7, 5), sharex=True)
         axes[0].plot(tx.time_s, tx.spikes, color="black")
         axes[0].set_title("1. Input Spike Train")
         axes[0].set_ylabel("Spikes")
@@ -134,7 +134,7 @@ class SingleSpikeTransmitter:
         )
 
     def plot(self, tx: SpikingRadarTx, show: bool = True) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+        fig, axes = plt.subplots(3, 1, figsize=(7, 5), sharex=True)
         axes[0].plot(tx.time_s, tx.spikes, color="black")
         axes[0].set_title("1. Input Spike Train")
         axes[0].set_ylabel("Spikes")

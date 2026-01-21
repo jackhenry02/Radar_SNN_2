@@ -77,7 +77,7 @@ class SpikingRadarReceiver_1D:
         rx: SpikingRadarRx,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
+        fig, axes = plt.subplots(4, 1, figsize=(7, 4), sharex=True)
         axes[0].plot(time_s, tx_signal, color="lightgray", label="Sent")
         axes[0].plot(time_s, rx.rx_signal, color="darkred", alpha=0.7, label="Received")
         axes[0].set_title("1. RF Channel: Sent vs Received")
@@ -143,7 +143,7 @@ class SpikingRadarReceiverBinaural:
         rx: SpikingRadarRx2D,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
+        fig, axes = plt.subplots(4, 1, figsize=(7, 6), sharex=True)
         axes[0].plot(time_s, tx_signal, color="lightgray", label="Sent")
         axes[0].plot(time_s, rx.rx_signal_left, color="darkred", alpha=0.7, label="Left")
         axes[0].plot(time_s, rx.rx_signal_right, color="purple", alpha=0.7, label="Right")
