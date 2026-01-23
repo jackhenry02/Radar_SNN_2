@@ -215,9 +215,10 @@ class SpikingLIFDelayEstimator:
             label=f"Estimate = {result.delay_s*1e3:.2f} ms",
         )
 
-        ax.set_xlabel("Delay (s)")
-        ax.set_ylabel("Spike count")
         ax.set_title("LIF Coincidence Bank (Spiking Correlation)")
+        title_size = ax.title.get_size()
+        ax.set_xlabel("Delay (s)", fontsize=title_size)
+        ax.set_ylabel("Spike count", fontsize=title_size)
         ax.legend()
         ax.grid(True)
 
@@ -296,22 +297,24 @@ class SpikingLIFDelayEstimator:
         result: LIFDelay2DResult,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(2, 1, figsize=(7, 4))
+        fig, axes = plt.subplots(2, 1, figsize=(5, 4))
 
+        axes[0].plot(result.delays_s, result.spike_counts_right, label="Right", color="lightgray")
         axes[0].plot(result.delays_s, result.spike_counts_left, label="Left", color="black")
-        axes[0].plot(result.delays_s, result.spike_counts_right, label="Right", color="gray")
         axes[0].axvline(result.delay_s, color="red", linestyle="--", label="Range Estimate")
         axes[0].set_title("LIF Range Bank (Left/Right)")
-        axes[0].set_xlabel("Delay (s)")
-        axes[0].set_ylabel("Spike count")
+        title_size_0 = axes[0].title.get_size()
+        axes[0].set_xlabel("Delay (s)", fontsize=title_size_0)
+        axes[0].set_ylabel("Spike count", fontsize=title_size_0)
         axes[0].legend()
         axes[0].grid(True)
 
-        axes[1].plot(result.itd_delays_s, result.spike_counts_itd, color="purple")
+        axes[1].plot(result.itd_delays_s, result.spike_counts_itd, color="black")
         axes[1].axvline(result.itd_s, color="red", linestyle="--", label="ITD Estimate")
         axes[1].set_title("LIF ITD Bank (Angle)")
-        axes[1].set_xlabel("Interaural delay (s)")
-        axes[1].set_ylabel("Spike count")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_xlabel("Interaural delay (s)", fontsize=title_size_1)
+        axes[1].set_ylabel("Spike count", fontsize=title_size_1)
         axes[1].legend()
         axes[1].grid(True)
 

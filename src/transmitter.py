@@ -64,17 +64,20 @@ class SpikingRadarTransmitter:
         fig, axes = plt.subplots(3, 1, figsize=(7, 5), sharex=True)
         axes[0].plot(tx.time_s, tx.spikes, color="black")
         axes[0].set_title("1. Input Spike Train")
-        axes[0].set_ylabel("Spikes")
+        title_size_0 = axes[0].title.get_size()
+        axes[0].set_ylabel("Spikes", fontsize=title_size_0)
         axes[0].set_xlim(0, min(0.05, tx.time_s[-1]))
 
         axes[1].plot(tx.time_s, tx.baseband, color="teal")
         axes[1].set_title("2. Baseband Signal (Spikes * FMCW Chirp)")
-        axes[1].set_ylabel("Amplitude")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_ylabel("Amplitude", fontsize=title_size_1)
 
         axes[2].plot(tx.time_s, tx.tx_signal, color="darkred", alpha=0.8)
-        axes[2].set_title("3. Transmitted RF Signal")
-        axes[2].set_xlabel("Time (s)")
-        axes[2].set_ylabel("Amplitude")
+        axes[2].set_title("3. Transmitted Signal")
+        title_size_2 = axes[2].title.get_size()
+        axes[2].set_xlabel("Time (s)", fontsize=title_size_2)
+        axes[2].set_ylabel("Amplitude", fontsize=title_size_2)
 
         fig.tight_layout()
         if show:
@@ -137,21 +140,23 @@ class SingleSpikeTransmitter:
         fig, axes = plt.subplots(3, 1, figsize=(7, 5), sharex=True)
         axes[0].plot(tx.time_s, tx.spikes, color="black")
         axes[0].set_title("1. Input Spike Train")
-        axes[0].set_ylabel("Spikes")
+        title_size_0 = axes[0].title.get_size()
+        axes[0].set_ylabel("Spikes", fontsize=title_size_0)
         axes[0].set_xlim(0, min(0.05, tx.time_s[-1]))
 
         axes[1].plot(tx.time_s, tx.baseband, color="teal")
         axes[1].set_title("2. Baseband Signal (Spikes * FMCW Chirp)")
-        axes[1].set_ylabel("Amplitude")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_ylabel("Amplitude", fontsize=title_size_1)
 
         axes[2].plot(tx.time_s, tx.tx_signal, color="darkred", alpha=0.8)
         axes[2].set_title("3. Transmitted RF Signal")
-        axes[2].set_xlabel("Time (s)")
-        axes[2].set_ylabel("Amplitude")
+        title_size_2 = axes[2].title.get_size()
+        axes[2].set_xlabel("Time (s)", fontsize=title_size_2)
+        axes[2].set_ylabel("Amplitude", fontsize=title_size_2)
 
         fig.tight_layout()
         if show:
             plt.show()
         return fig, axes
-
 

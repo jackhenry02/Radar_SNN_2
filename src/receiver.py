@@ -77,21 +77,29 @@ class SpikingRadarReceiver_1D:
         rx: SpikingRadarRx,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(4, 1, figsize=(7, 4), sharex=True)
+        fig, axes = plt.subplots(4, 1, figsize=(10, 6), sharex=True)
         axes[0].plot(time_s, tx_signal, color="lightgray", label="Sent")
         axes[0].plot(time_s, rx.rx_signal, color="darkred", alpha=0.7, label="Received")
         axes[0].set_title("1. RF Channel: Sent vs Received")
+        title_size_0 = axes[0].title.get_size()
+        axes[0].set_ylabel("Amplitude", fontsize=title_size_0)
         axes[0].legend(loc="upper right")
 
         axes[1].plot(time_s, rx.rx_baseband, color="teal")
         axes[1].set_title("2. Demodulated Baseband")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_ylabel("Amplitude", fontsize=title_size_1)
 
         axes[2].plot(time_s, rx.recovered_signal, color="blue", label="Recovered Analog")
         axes[2].set_title("3. Matched Filter Output")
+        title_size_2 = axes[2].title.get_size()
+        axes[2].set_ylabel("Amplitude", fontsize=title_size_2)
 
         axes[3].plot(time_s, rx.recovered_spikes, color="black", alpha=0.6, linestyle="--")
         axes[3].set_title("4. Digitized Spikes")
-        axes[3].set_xlabel("Time (s)")
+        title_size_3 = axes[3].title.get_size()
+        axes[3].set_ylabel("Spikes", fontsize=title_size_3)
+        axes[3].set_xlabel("Time (s)", fontsize=title_size_3)
 
         fig.tight_layout()
         if show:
@@ -143,27 +151,35 @@ class SpikingRadarReceiverBinaural:
         rx: SpikingRadarRx2D,
         show: bool = True,
     ) -> Tuple[plt.Figure, np.ndarray]:
-        fig, axes = plt.subplots(4, 1, figsize=(7, 6), sharex=True)
-        axes[0].plot(time_s, tx_signal, color="lightgray", label="Sent")
-        axes[0].plot(time_s, rx.rx_signal_left, color="darkred", alpha=0.7, label="Left")
-        axes[0].plot(time_s, rx.rx_signal_right, color="purple", alpha=0.7, label="Right")
-        axes[0].set_title("1. RF Channel: Sent vs Received (Binaural)")
+        fig, axes = plt.subplots(4, 1, figsize=(10, 8), sharex=True)
+        axes[0].plot(time_s, tx_signal, color="pink", label="Sent")
+        axes[0].plot(time_s, rx.rx_signal_right, color="red", label="Right")
+        axes[0].plot(time_s, rx.rx_signal_left, color="black", label="Left")
+        axes[0].set_title("1. Environment Channel: Sent vs Received (Binaural)")
+        title_size_0 = axes[0].title.get_size()
+        axes[0].set_ylabel("Amplitude", fontsize=title_size_0)
         axes[0].legend(loc="upper right")
 
-        axes[1].plot(time_s, rx.rx_baseband_left, color="teal", label="Left")
-        axes[1].plot(time_s, rx.rx_baseband_right, color="orange", label="Right", alpha=0.8)
+        axes[1].plot(time_s, rx.rx_baseband_right, color="red", label="Right")
+        axes[1].plot(time_s, rx.rx_baseband_left, color="black", label="Left")
         axes[1].set_title("2. Demodulated Baseband")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_ylabel("Amplitude", fontsize=title_size_1)
         axes[1].legend(loc="upper right")
 
-        axes[2].plot(time_s, rx.recovered_signal_left, color="blue", label="Left")
-        axes[2].plot(time_s, rx.recovered_signal_right, color="green", label="Right", alpha=0.8)
+        axes[2].plot(time_s, rx.recovered_signal_right, color="red", label="Right")
+        axes[2].plot(time_s, rx.recovered_signal_left, color="black", label="Left")
         axes[2].set_title("3. Matched Filter Output")
+        title_size_2 = axes[2].title.get_size()
+        axes[2].set_ylabel("Amplitude", fontsize=title_size_2)
         axes[2].legend(loc="upper right")
 
-        axes[3].plot(time_s, rx.recovered_spikes_left, color="black", alpha=0.6, linestyle="--", label="Left")
-        axes[3].plot(time_s, rx.recovered_spikes_right, color="gray", alpha=0.6, linestyle="--", label="Right")
+        axes[3].plot(time_s, rx.recovered_spikes_right, color="red", alpha=1, linestyle="--", label="Right")
+        axes[3].plot(time_s, rx.recovered_spikes_left, color="black", alpha=1, linestyle="--", label="Left")
         axes[3].set_title("4. Digitized Spikes")
-        axes[3].set_xlabel("Time (s)")
+        title_size_3 = axes[3].title.get_size()
+        axes[3].set_ylabel("Spikes", fontsize=title_size_3)
+        axes[3].set_xlabel("Time (s)", fontsize=title_size_3)
         axes[3].legend(loc="upper right")
 
         fig.tight_layout()

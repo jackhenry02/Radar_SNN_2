@@ -55,8 +55,9 @@ class SpikingRadarCorrelator:
         axes[1].plot(lag_time, correlation, color="purple")
         axes[1].axvline(delay_s, color="red", linestyle="--", label=f"Peak at {delay_s*1000:.1f} ms")
         axes[1].set_title("Cross-Correlation (Matching Algorithm)")
-        axes[1].set_xlabel("Lag Time (s)")
-        axes[1].set_ylabel("Correlation Strength")
+        title_size_1 = axes[1].title.get_size()
+        axes[1].set_xlabel("Lag Time (s)", fontsize=title_size_1)
+        axes[1].set_ylabel("Correlation Strength", fontsize=title_size_1)
         axes[1].legend()
         axes[1].set_xlim(0, self.config.duration_s)
 
