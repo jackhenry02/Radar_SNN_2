@@ -79,19 +79,31 @@ This creates a "diagonal" pattern in your spike plot. Your **Jeffress Coincidenc
 
 To ensure a stable transition, follow these three experiments:
 
-### Experiment A: The Frequency Sweep Check
+### Experiment A: Envelope conversion
+
+* **Input:** Standard received modulated signal
+* **Metric:** Plot the input signal and the output signal
+* **Success:** We should be able to see the demodulated signal similar to that of the classically demodulated signal
+
+### Experiment B: The Frequency Sweep Check
 
 * **Input:** Your standard modulated chirp.
 * **Metric:** Plot the $V_{mem}$ of 5 RF neurons tuned to different parts of the chirp.
 * **Success:** You should see each neuron's $V_{mem}$ "hum" and peak only when the chirp passes through its specific frequency band.
 
-### Experiment B: Single-Ear Spiking
+### Experiment C: Single-Ear Spiking
 
 * **Input:** Echo from 5 meters.
 * **Metric:** Raster plot of the Tonotopic Bank.
 * **Success:** A clear "diagonal" line of spikes representing the temporal order of the frequency sweep.
 
-### Experiment C: Coincidence Integration
+### Experiment D: Full cochlear model
+
+* **Input:** Standard received signal
+* **Metric:** Plots of each stage in the pipeline
+* **Success:** A clear spiking output that can be used by the processing unit
+
+### Experiment E: Coincidence Integration
 
 * **Action:** Feed the parallel channels into your existing `Processing` unit.
 * **Adjustment:** You will need to sum or "AND" the signals from the different frequency channels.
