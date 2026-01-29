@@ -186,3 +186,96 @@ class SpikingRadarReceiverBinaural:
         if show:
             plt.show()
         return fig, axes
+
+
+class ResonantCochlearReceiver:
+    """Binaural resonant cochlear model using a bank of resonator-and-fire neurons."""
+
+    def __init__(
+        self,
+        config: SpikingRadarConfig,
+        n_channels: int = 32,
+        f_start_hz: float | None = None,
+        f_end_hz: float | None = None,
+        beta_slow: float = 0.995,
+        w_in: float = 1.0,
+        v_rest: float = 0.0,
+        v_thr: float = 1.0,
+        v_reset: float = 0.0,
+        u_d: float = 0.2,
+        damping: float = 0.1,
+    ) -> None:
+        self.config = config
+        self.dt = 1.0 / config.fs_hz
+
+        self.beta_slow = beta_slow
+        self.w_in = w_in
+        self.v_rest = v_rest
+        self.v_thr = v_thr
+        self.v_reset = v_reset
+        self.u_d = u_d
+        self.damping = damping
+
+        if f_start_hz is None:
+            f_start_hz = config.chirp_start_hz
+        if f_end_hz is None:
+            f_end_hz = config.chirp_start_hz + config.chirp_bandwidth_hz
+
+        self.n_channels = n_channels
+        # Log spacing gives a more cochlea-like tonotopic map.
+        self.frequencies_hz = np.logspace(
+            np.log10(max(f_start_hz, 1.0)),
+            np.log10(max(f_end_hz, 1.0)),
+            n_channels,
+        )
+        omega = 2.0 * np.pi * self.frequencies_hz
+        self.A = -2.0 * damping * omega
+        self.B = omega ** 2
+
+    def _envelope_detector(self, signal: np.ndarray) -> np.ndarray:
+        rectified = np.maximum(signal, 0.0)
+        env = np.zeros_like(rectified)
+        for i in range(1, rectified.size):
+            env[i] = self.beta_slow * env[i - 1] + self.w_in * rectified[i]
+        return env
+
+    def _rf_neuron_step(
+        self,
+        v: np.ndarray,
+        u: np.ndarray,
+        current: float,
+        dt: float,
+        params: dict,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        v_rest = params["v_rest"]
+        A = params["A"]
+        B = params["B"]
+        dv = dt * (A * (v - v_rest) - u + current)
+        du = dt * (B * (v - v_rest))
+        return v + dv, u + du
+
+    def _process_channel(self, signal: np.ndarray) -> np.ndarray:
+        env = self._envelope_detector(signal)
+        n_steps = env.size
+        v = np.full(self.n_channels, self.v_rest, dtype=float)
+        u = np.zeros(self.n_channels, dtype=float)
+        spikes = np.zeros((self.n_channels, n_steps), dtype=float)
+
+        params = {"A": self.A, "B": self.B, "v_rest": self.v_rest}
+        for t in range(n_steps):
+            v, u = self._rf_neuron_step(v, u, env[t], self.dt, params)
+            fired = v >= self.v_thr
+            if np.any(fired):
+                spikes[fired, t] = 1.0
+                v[fired] = self.v_reset
+                u[fired] += self.u_d
+        return spikes
+
+    def process(
+        self,
+        raw_signal_left: np.ndarray,
+        raw_signal_right: np.ndarray,
+    ) -> dict[str, np.ndarray]:
+        left_spikes = self._process_channel(np.asarray(raw_signal_left))
+        right_spikes = self._process_channel(np.asarray(raw_signal_right))
+        return {"left": left_spikes, "right": right_spikes}
