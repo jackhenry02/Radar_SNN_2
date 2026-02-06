@@ -188,7 +188,7 @@ class SpikingRadarReceiverBinaural:
         return fig, axes
 
 
-class ResonantCochlearReceiver:
+class ResonantCochlearReceiver_old:
     """Binaural resonant cochlear model using a bank of resonator-and-fire neurons."""
 
     def __init__(
@@ -269,6 +269,131 @@ class ResonantCochlearReceiver:
                 spikes[fired, t] = 1.0
                 v[fired] = self.v_reset
                 u[fired] += self.u_d
+        return spikes
+
+    def process(
+        self,
+        raw_signal_left: np.ndarray,
+        raw_signal_right: np.ndarray,
+    ) -> dict[str, np.ndarray]:
+        left_spikes = self._process_channel(np.asarray(raw_signal_left))
+        right_spikes = self._process_channel(np.asarray(raw_signal_right))
+        return {"left": left_spikes, "right": right_spikes}
+
+
+
+class ResonantCochlearReceiver:
+    """Binaural resonant cochlear model using a bank of resonator-and-fire neurons.
+    
+    Fixed with Symplectic Euler integration for stability and Frequency-dependent
+    gain for uniform sensitivity across the spectrum.
+    """
+
+    def __init__(
+        self,
+        config, # Assuming SpikingRadarConfig is passed here
+        n_channels: int = 32,
+        f_start_hz: float | None = None,
+        f_end_hz: float | None = None,
+        beta_slow: float = 0.995,
+        w_in: float = 1.0,
+        v_rest: float = 0.0,
+        v_thr: float = 1.0,
+        v_reset: float = 0.0,
+        u_d: float = 0.2,
+        damping: float = 0.1,
+    ) -> None:
+        self.config = config
+        self.dt = 1.0 / config.fs_hz
+
+        self.beta_slow = beta_slow
+        self.w_in = w_in
+        self.v_rest = v_rest
+        self.v_thr = v_thr
+        self.v_reset = v_reset
+        self.u_d = u_d
+        self.damping = damping
+
+        if f_start_hz is None:
+            f_start_hz = config.chirp_start_hz
+        if f_end_hz is None:
+            f_end_hz = config.chirp_start_hz + config.chirp_bandwidth_hz
+
+        self.n_channels = n_channels
+        
+        # Log spacing gives a more cochlea-like tonotopic map.
+        self.frequencies_hz = np.logspace(
+            np.log10(max(f_start_hz, 1.0)),
+            np.log10(max(f_end_hz, 1.0)),
+            n_channels,
+        )
+        
+        omega = 2.0 * np.pi * self.frequencies_hz
+        
+        # Physics Parameters
+        self.A = -2.0 * damping * omega
+        self.B = omega ** 2
+        
+        # [FIX] Impedance Matching:
+        # High freq springs are "stiff" (B is large). They need more current 
+        # to achieve the same voltage swing as low freq springs.
+        # We scale input by omega to compensate.
+        self.input_gain = w_in * omega
+
+    def _rf_neuron_step(
+        self,
+        v: np.ndarray,
+        u: np.ndarray,
+        current: float,
+        dt: float,
+        params: dict,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        v_rest = params["v_rest"]
+        A = params["A"]
+        B = params["B"]
+        gain = params["input_gain"]
+        
+        # Scale the raw signal current by our impedance gain
+        I_scaled = current * gain
+        
+        # [FIX] Symplectic Euler Integration
+        # 1. Update Voltage first
+        v_new = v + dt * (A * (v - v_rest) - u + I_scaled)
+        
+        # 2. Update Recovery using the NEW Voltage
+        # This "closes the loop" and ensures energy stability.
+        u_new = u + dt * (B * (v_new - v_rest))
+        
+        return v_new, u_new
+
+    def _process_channel(self, signal: np.ndarray) -> np.ndarray:
+        n_steps = signal.size
+        
+        # Initialize State
+        v = np.full(self.n_channels, self.v_rest, dtype=float)
+        u = np.zeros(self.n_channels, dtype=float)
+        spikes = np.zeros((self.n_channels, n_steps), dtype=float)
+
+        # Pre-pack parameters for the loop
+        params = {
+            "A": self.A, 
+            "B": self.B, 
+            "v_rest": self.v_rest,
+            "input_gain": self.input_gain
+        }
+        
+        for t in range(n_steps):
+            # Pass the raw signal (Oscillation) directly to the physics engine
+            v, u = self._rf_neuron_step(v, u, signal[t], self.dt, params)
+            
+            fired = v >= self.v_thr
+            if np.any(fired):
+                spikes[fired, t] = 1.0
+                
+                # Reset Logic
+                v[fired] = self.v_reset
+                u[fired] += self.u_d
+                
         return spikes
 
     def process(
