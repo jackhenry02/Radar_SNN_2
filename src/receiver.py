@@ -256,14 +256,14 @@ class ResonantCochlearReceiver:
 
     def _process_channel(self, signal: np.ndarray) -> np.ndarray:
         env = self._envelope_detector(signal)
-        n_steps = env.size
+        n_steps = signal.size
         v = np.full(self.n_channels, self.v_rest, dtype=float)
         u = np.zeros(self.n_channels, dtype=float)
         spikes = np.zeros((self.n_channels, n_steps), dtype=float)
 
         params = {"A": self.A, "B": self.B, "v_rest": self.v_rest}
         for t in range(n_steps):
-            v, u = self._rf_neuron_step(v, u, env[t], self.dt, params)
+            v, u = self._rf_neuron_step(v, u, signal[t], self.dt, params)
             fired = v >= self.v_thr
             if np.any(fired):
                 spikes[fired, t] = 1.0
