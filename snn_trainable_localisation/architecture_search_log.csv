@@ -1,0 +1,7 @@
+Attempt_Number,Phase,Architecture_Description,Num_Layers,Hidden_Dims,Tau_mem_values,Spike_Rate_L1,Spike_Rate_L2,Validation_MAE_theta,Validation_MAE_range,Viable (Y/N),Comments
+1,Phase1,Baseline MSO->IC with LIF layers,2,"(128, 64)","(5.0, 20.0)",0.0153,0.0031,48.250,6.328,N,Grad: ok
+2,Phase1,MSO->IC with skip from input to IC current,2,"(128, 64)","(5.0, 20.0)",0.0267,0.1132,47.474,6.277,N,Grad: ok
+3,Phase1,MSO->IC->higher integration layer,3,"(128, 64, 32)","(5.0, 20.0, 30.0)",0.0435,0.0200,47.868,6.299,N,Grad: ok
+4,Phase1,Left/right projections with multiplicative coincidence gating,2,"(128, 64)","(5.0, 20.0)",0.0204,0.0060,48.269,6.239,N,Grad: ok
+5,Phase1,Parallel MSO subpops with fast+slow taus,2,"(128, 64)","(4.0, 7.0, 20.0)",0.0193,0.0139,47.992,6.227,N,Grad: ok
+6,Phase1,MSO->IC with residual from MSO to readout,2,"(128, 64)","(5.0, 20.0)",0.0416,0.0161,48.082,6.171,N,Grad: ok

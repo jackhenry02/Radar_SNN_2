@@ -1,0 +1,22 @@
+SNN Trainable Localisation Experiment Log
+========================================
+
+This file will be overwritten by train.py after a completed run.
+
+Notes (template):
+- Architecture reasoning:
+  Two-layer LIF SNN approximating MSO (coincidence detection) and IC
+  (temporal integration) with a linear readout for continuous regression.
+
+- Observed convergence behaviour:
+  Fill in after training.
+
+- Strengths:
+  Compact, biologically inspired timing model with low compute cost.
+
+- Weaknesses:
+  Coarse time resolution and simplified acoustics.
+
+- Biological plausibility comments:
+  LIF neurons and layered structure are plausible, but cochlear mechanics
+  are simplified for tractability.
