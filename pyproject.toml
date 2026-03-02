@@ -17,5 +17,6 @@ dependencies = [
     "scipy>=1.17.0",
     "snnax>=0.0.1",
     "snntorch>=0.9.4",
+    "tonic>=1.6.0",
     "torch>=2.9.1",
 ]
