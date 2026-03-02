@@ -2,6 +2,6 @@ use bash to run test file:
 
 uv run -m library_testing.lauscher \
 library_testing/lauscher/test_resources_spoken_digit.flac \
-my_first_spiketrain.npz \
+library_testing/lauscher/my_first_spiketrain.npz \
 --num_channels 70 \
 --verbose
