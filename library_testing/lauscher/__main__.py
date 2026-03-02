@@ -8,9 +8,9 @@ import argparse
 import logging
 from os.path import isfile
 
-from audiowaves import FileMonoAudioWave
-from helpers import CommandLineArguments
-from transformations.wave2spike import Wave2Spike
+from .audiowaves import FileMonoAudioWave
+from .helpers import CommandLineArguments
+from .transformations.wave2spike import Wave2Spike
 
 
 def main(input_file: str,

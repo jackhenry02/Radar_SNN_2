@@ -1,7 +1,7 @@
-from abstract import Transformation
-from audiowaves import MonoAudioWave
-from spike_train import SpikeTrain
-from transformations import RmsNormalizer, HanningWindow, \
+from ..abstract import Transformation
+from ..audiowaves import MonoAudioWave
+from ..spike_train import SpikeTrain
+from ..transformations import RmsNormalizer, HanningWindow, \
     BasilarMembrane, HairCell, BushyCell
 
 

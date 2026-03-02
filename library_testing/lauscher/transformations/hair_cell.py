@@ -3,10 +3,10 @@ from multiprocessing import Pool
 
 import numpy as np
 
-from abstract import Transformation
-from firing_probability import FiringProbability
-from helpers import CommandLineArguments
-from membranevelocity import MembraneVelocity
+from ..abstract import Transformation
+from ..firing_probability import FiringProbability
+from ..helpers import CommandLineArguments
+from ..membranevelocity import MembraneVelocity
 
 
 class HairCell(Transformation):

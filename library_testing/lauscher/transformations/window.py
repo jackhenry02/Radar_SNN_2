@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Optional
 import numpy as np
 
-from abstract import Transformation
-from audiowaves import MonoAudioWave
+from ..abstract import Transformation
+from ..audiowaves import MonoAudioWave
 
 
 class Window(Transformation, metaclass=ABCMeta):

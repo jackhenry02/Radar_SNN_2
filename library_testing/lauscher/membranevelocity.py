@@ -1,4 +1,4 @@
-from abstract import SampledTimeSeries
+from .abstract import SampledTimeSeries
 
 
 class MembraneVelocity(SampledTimeSeries):

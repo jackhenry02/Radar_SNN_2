@@ -5,10 +5,10 @@ from multiprocessing import Pool
 import numpy as np
 import numba
 
-from abstract import Transformation
-from firing_probability import FiringProbability
-from helpers import CommandLineArguments
-from spike_train import SpikeTrain
+from ..abstract import Transformation
+from ..firing_probability import FiringProbability
+from ..helpers import CommandLineArguments
+from ..spike_train import SpikeTrain
 
 
 class BushyCell(Transformation):

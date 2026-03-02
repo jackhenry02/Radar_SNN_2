@@ -5,7 +5,7 @@ from typing import Union, List
 import numpy as np
 from matplotlib.axes import Axes
 
-from helpers import Timer
+from .helpers import Timer
 
 
 class Transformable(metaclass=ABCMeta):

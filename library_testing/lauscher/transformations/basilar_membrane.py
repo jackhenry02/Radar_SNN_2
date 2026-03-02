@@ -3,10 +3,10 @@ from multiprocessing import Pool
 import numpy as np
 from scipy import special
 
-from abstract import Transformation
-from audiowaves import MonoAudioWave
-from helpers import CommandLineArguments
-from membranevelocity import MembraneVelocity
+from ..abstract import Transformation
+from ..audiowaves import MonoAudioWave
+from ..helpers import CommandLineArguments
+from ..membranevelocity import MembraneVelocity
 
 
 class BasilarMembrane(Transformation):

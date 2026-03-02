@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.axes import Axes
 import soundfile
 
-from abstract import SampledTimeSeries, Exportable
+from .abstract import SampledTimeSeries, Exportable
 
 
 class MonoAudioWave(SampledTimeSeries, Exportable):
