@@ -2555,6 +2555,7 @@ dependencies = [
     { name = "scipy" },
     { name = "snnax" },
     { name = "snntorch" },
+    { name = "soundfile" },
     { name = "tonic" },
     { name = "torch" },
 ]
@@ -2573,6 +2574,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.17.0" },
     { name = "snnax", specifier = ">=0.0.1" },
     { name = "snntorch", specifier = ">=0.9.4" },
+    { name = "soundfile", specifier = ">=0.13.1" },
     { name = "tonic", specifier = ">=1.6.0" },
     { name = "torch", specifier = ">=2.9.1" },
 ]
