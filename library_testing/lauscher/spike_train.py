@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from matplotlib.axes import Axes
 
-from abstract import Transformable, Exportable, Plottable
+from .abstract import Transformable, Exportable, Plottable
 
 
 class SpikeTrain(Transformable, Exportable, Plottable):
