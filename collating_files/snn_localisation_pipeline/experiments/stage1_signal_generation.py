@@ -63,11 +63,13 @@ def run_stage1_experiment() -> None:
 
     # Plot 2: Spectrogram of combined pressure waveform with echo arrival marker.
     fig2, ax2 = plt.subplots(figsize=(10, 4))
+    nperseg = min(1024, combined_pa.size)
+    noverlap = min(768, max(0, nperseg - 1))
     freq_hz, time_spec_s, sxx = signal.spectrogram(
         combined_pa,
         fs=SAMPLING_FREQUENCY_HZ,
-        nperseg=1024,
-        noverlap=768,
+        nperseg=nperseg,
+        noverlap=noverlap,
     )
     ax2.pcolormesh(time_spec_s, freq_hz, 10.0 * np.log10(sxx + 1e-15), shading="gouraud")
     ax2.axvline(expected_echo_arrival_s, linestyle="--", color="white", linewidth=1.5, label="Expected echo arrival (s)")
@@ -91,4 +93,3 @@ def run_stage1_experiment() -> None:
 if __name__ == "__main__":
     _configure_logging()
     run_stage1_experiment()
-

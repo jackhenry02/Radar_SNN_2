@@ -14,9 +14,9 @@ REFERENCE_DISTANCE_M: float = 1.0
 EPSILON_DISTANCE_M: float = 1e-6
 
 # Sampling and simulation window
-SAMPLING_FREQUENCY_HZ: int = 256_000
-SIGNAL_DURATION_S: float = 0.080
-EMISSION_START_S: float = 0.005
+SAMPLING_FREQUENCY_HZ: int = 12_800  # fs_original // 20 for Lauscher compatibility
+SIGNAL_DURATION_S: float = 0.051  # active FM-CF-FM call region only
+EMISSION_START_S: float = 0.0
 
 # Range limits for safe simulation
 MAX_RANGE_M: float = 10.0
@@ -34,9 +34,21 @@ NOISE_STD_PA: float = 2e-4
 RANDOM_SEED: int = 42
 
 # Bat-call (emitted pressure waveform) parameters
-BAT_CALL_DURATION_S: float = 0.004
-BAT_CALL_F_START_HZ: float = 90_000.0
-BAT_CALL_F_END_HZ: float = 45_000.0
+BAT_CALL_DURATION_S: float = 0.004  # legacy helper window for validation lag gating
+BAT_FM_UP_DURATION_S: float = 0.002
+BAT_CF_DURATION_S: float = 0.046
+BAT_FM_DOWN_DURATION_S: float = 0.003
+BAT_REFERENCE_SAMPLING_FREQUENCY_HZ: int = 256_000
+BAT_H1_F_START_HZ_REF: float = 45_000.0
+BAT_H1_F_CF_HZ_REF: float = 52_500.0
+BAT_H1_F_END_HZ_REF: float = 42_500.0
+BAT_H2_F_START_HZ_REF: float = 90_000.0
+BAT_H2_F_CF_HZ_REF: float = 105_000.0
+BAT_H2_F_END_HZ_REF: float = 85_000.0
+BAT_H1_PRESSURE_SCALE: float = 10 ** (-60.0 / 20.0)
+BAT_H2_PRESSURE_SCALE: float = 10 ** (-40.0 / 20.0)
+BAT_CALL_F_START_HZ: float = BAT_H2_F_START_HZ_REF
+BAT_CALL_F_END_HZ: float = BAT_H1_F_END_HZ_REF
 BAT_CALL_PEAK_PRESSURE_PA: float = 0.02
 BAT_CALL_TUKEY_ALPHA: float = 0.2
 

@@ -17,11 +17,20 @@ from scipy import signal
 from collating_files.snn_localisation_pipeline.config import (
     ATTENUATION_MODE,
     BAT_CALL_DURATION_S,
-    BAT_CALL_F_END_HZ,
-    BAT_CALL_F_START_HZ,
     BAT_CALL_PEAK_PRESSURE_PA,
     BAT_CALL_TUKEY_ALPHA,
-    EMISSION_START_S,
+    BAT_CF_DURATION_S,
+    BAT_FM_DOWN_DURATION_S,
+    BAT_FM_UP_DURATION_S,
+    BAT_H1_F_CF_HZ_REF,
+    BAT_H1_F_END_HZ_REF,
+    BAT_H1_F_START_HZ_REF,
+    BAT_H1_PRESSURE_SCALE,
+    BAT_H2_F_CF_HZ_REF,
+    BAT_H2_F_END_HZ_REF,
+    BAT_H2_F_START_HZ_REF,
+    BAT_H2_PRESSURE_SCALE,
+    BAT_REFERENCE_SAMPLING_FREQUENCY_HZ,
     EPSILON_DISTANCE_M,
     MAX_RANGE_M,
     NOISE_ENABLED,
@@ -29,8 +38,8 @@ from collating_files.snn_localisation_pipeline.config import (
     RANDOM_SEED,
     REFERENCE_DISTANCE_M,
     SAMPLING_FREQUENCY_HZ,
-    SIGNAL_DURATION_S,
     SPEED_OF_SOUND_M_PER_S,
+    sampling_frequency,
 )
 
 LOGGER = logging.getLogger(__name__)
@@ -60,71 +69,101 @@ def _compute_attenuation_factor(distance_m: float, attenuation_mode: str) -> flo
 
 
 def generate_bat_call(
-    fs_hz: int = SAMPLING_FREQUENCY_HZ,
-    signal_duration_s: float = SIGNAL_DURATION_S,
-    emission_start_s: float = EMISSION_START_S,
-    call_duration_s: float = BAT_CALL_DURATION_S,
-    f_start_hz: float = BAT_CALL_F_START_HZ,
-    f_end_hz: float = BAT_CALL_F_END_HZ,
+    fs_hz: int = sampling_frequency,
+    t_sweep_up_s: float = BAT_FM_UP_DURATION_S,
+    t_cf_s: float = BAT_CF_DURATION_S,
+    t_sweep_down_s: float = BAT_FM_DOWN_DURATION_S,
     peak_pressure_pa: float = BAT_CALL_PEAK_PRESSURE_PA,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Generate a mono bat-like chirp waveform.
+    """Generate an active FM-QCF echolocation call (no silence/padding).
 
-    Args:
-        fs_hz: Sampling frequency (Hz).
-        signal_duration_s: Total signal duration (s).
-        emission_start_s: Chirp start time in the buffer (s).
-        call_duration_s: Chirp duration (s).
-        f_start_hz: Chirp start frequency (Hz).
-        f_end_hz: Chirp end frequency (Hz).
-        peak_pressure_pa: Peak emission pressure amplitude (Pa).
+    Structure:
+    1) Hyperbolic FM sweep (period-linear chirp), modeled analytically.
+    2) Quasi-constant-frequency (QCF) plateau at the sweep end frequency.
+    3) Tukey edge smoothing on the active region.
 
-    Returns:
-        emitted_waveform_pa: Emitted pressure waveform (Pa), shape [T].
-        time_axis_s: Time axis (s), shape [T].
+    Hyperbolic sweep model:
+        f(t) = (f0 * f1 * T) / (f1 * T + (f0 - f1) * t)
+
+    Required analytic phase integral:
+        phi(t) = 2*pi*(f0*f1*T/(f0-f1))*ln((f1*T + (f0-f1)*t)/(f1*T))
+        signal_fm(t) = sin(phi(t))
+
+    Expansion factor rationale:
+    To avoid synthesizing ultrasonic carriers at low pipeline sample rates, we use
+    the expansion trick (factor=17): frequencies are divided by 17 and temporal
+    duration is multiplied by 17 before synthesis, preserving sweep shape while
+    respecting Nyquist at config sampling frequency.
+
+    Units:
+    - Frequency in Hertz (Hz)
+    - Time in seconds (s)
+    - Pressure in Pascals (Pa)
     """
     assert fs_hz > 0, "Sampling frequency must be positive (Hz)."
-    assert signal_duration_s > 0.0, "Signal duration must be positive (s)."
-    assert call_duration_s > 0.0, "Call duration must be positive (s)."
+    assert t_cf_s >= 0.0, "QCF duration must be non-negative (s)."
     assert peak_pressure_pa >= 0.0, "Peak pressure must be non-negative (Pa)."
-    assert 0.0 <= emission_start_s < signal_duration_s, "Emission start must lie in [0, duration)."
 
-    num_samples = int(round(signal_duration_s * fs_hz))
-    if num_samples <= 0:
-        raise ValueError("signal_duration_s * fs_hz produced zero samples.")
+    _ = t_sweep_up_s  # kept for API compatibility with existing pipeline calls
+    _ = t_sweep_down_s
 
-    time_axis_s = np.arange(num_samples, dtype=float) / float(fs_hz)
-    emitted_waveform_pa = np.zeros(num_samples, dtype=float)
+    expansion = 17.0
+    f_start_orig_hz = 90_000.0
+    f_end_orig_hz = 50_000.0
+    t_call_orig_s = 0.0037
 
-    start_idx = int(round(emission_start_s * fs_hz))
-    call_samples = max(1, int(round(call_duration_s * fs_hz)))
-    end_idx = start_idx + call_samples
-    if end_idx > num_samples:
+    f_start_hz = f_start_orig_hz / expansion
+    f_end_hz = f_end_orig_hz / expansion
+    t_fm_s = t_call_orig_s * expansion
+    t_qcf_s = float(t_cf_s)
+
+    if f_start_hz <= f_end_hz:
+        raise ValueError("Hyperbolic down-sweep requires f_start_hz > f_end_hz.")
+    if f_start_hz >= 0.5 * fs_hz:
         raise ValueError(
-            "Bat call extends beyond the signal buffer. "
-            "Increase signal_duration_s or reduce emission_start_s/call_duration_s."
+            f"Scaled start frequency exceeds Nyquist: f_start={f_start_hz:.1f} Hz, Nyquist={0.5*fs_hz:.1f} Hz."
         )
 
-    local_t_s = np.arange(call_samples, dtype=float) / float(fs_hz)
-    chirp_wave = signal.chirp(
-        local_t_s,
-        f0=f_start_hz,
-        f1=f_end_hz,
-        t1=call_duration_s,
-        method="linear",
-    )
-    envelope = signal.windows.tukey(call_samples, alpha=BAT_CALL_TUKEY_ALPHA)
-    emitted_waveform_pa[start_idx:end_idx] = peak_pressure_pa * chirp_wave * envelope
+    n_fm = max(1, int(round(t_fm_s * fs_hz)))
+    n_qcf = max(0, int(round(t_qcf_s * fs_hz)))
+    n_total = n_fm + n_qcf
+
+    t_fm = np.arange(n_fm, dtype=float) / float(fs_hz)
+
+    coeff = (2.0 * np.pi) * (f_start_hz * f_end_hz * t_fm_s / (f_start_hz - f_end_hz))
+    denom = f_end_hz * t_fm_s + (f_start_hz - f_end_hz) * t_fm
+    phi_fm = coeff * np.log(denom / (f_end_hz * t_fm_s))
+    fm = np.sin(phi_fm)
+
+    if n_qcf > 0:
+        # Lower QCF gain keeps broadband FM dominance while retaining plateau structure.
+        qcf_gain = 0.2
+        t_qcf = np.arange(n_qcf, dtype=float) / float(fs_hz)
+        phi_end = phi_fm[-1]
+        qcf = qcf_gain * np.sin(phi_end + 2.0 * np.pi * f_end_hz * (t_qcf + (1.0 / fs_hz)))
+        waveform_pa = np.concatenate([fm, qcf])
+    else:
+        waveform_pa = fm
+
+    waveform_pa *= signal.windows.tukey(n_total, alpha=0.2)
+
+    max_abs = np.max(np.abs(waveform_pa))
+    if max_abs > 0:
+        waveform_pa = waveform_pa / max_abs * peak_pressure_pa
+
+    time_axis_s = np.arange(n_total, dtype=float) / float(fs_hz)
 
     LOGGER.info(
-        "Generated bat call: fs=%d Hz, duration=%.6f s, peak=%.6f Pa, f_start=%.1f Hz, f_end=%.1f Hz",
+        "Generated FM-QCF call: fs=%d Hz, FM_dur=%.6f s, QCF_dur=%.6f s, peak=%.6f Pa, f_start=%.1f Hz, f_end=%.1f Hz, expansion=%.1f",
         fs_hz,
-        signal_duration_s,
+        t_fm_s,
+        t_qcf_s,
         peak_pressure_pa,
         f_start_hz,
         f_end_hz,
+        expansion,
     )
-    return emitted_waveform_pa, time_axis_s
+    return waveform_pa, time_axis_s
 
 
 def simulate_echo(
