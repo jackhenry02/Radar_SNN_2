@@ -19,7 +19,7 @@ SIGNAL_DURATION_S: float = 0.051  # active FM-CF-FM call region only
 EMISSION_START_S: float = 0.0
 
 # Range limits for safe simulation
-MAX_RANGE_M: float = 10.0
+MAX_RANGE_M: float = 30.0
 
 # Attenuation mode for echo pressure:
 # - "pressure_1_over_r": pressure amplitude scales as 1/r
@@ -53,7 +53,7 @@ BAT_CALL_PEAK_PRESSURE_PA: float = 0.02
 BAT_CALL_TUKEY_ALPHA: float = 0.2
 
 # Stage 1 validation defaults
-STAGE1_VALIDATION_DISTANCE_M: float = 5.0
+STAGE1_VALIDATION_DISTANCE_M: float = 10.0
 
 
 @dataclass(frozen=True)
